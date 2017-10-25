@@ -116,29 +116,43 @@ class TransferPulseLoopTask(InstrumentTask):
         self.driver.delete_all_waveforms()
         self.driver.clear_all_sequences()
 
-        _used_channels = []
+        current_pos = 0        
         for nn in range(loop_points):
             self.sequence_vars[self.loop_name] = str(loop_values[nn])
             for k, v in self.sequence_vars.items():
                 seq.external_vars[k] = self.format_and_eval_string(v)
             context.sequence_name = '{}_{}'.format(seq_name_0, nn+1)
-            res, infos, errors = context.compile_and_transfer_sequence(
-                                                            seq,
-                                                            driver=self.driver)
-            for cc in range(4):
-                _seq = 'sequence_ch'+str(cc+1)
-                if infos[_seq]:
-                    self.driver.get_channel(cc+1).set_sequence_pos(infos[_seq],
-                                                                   nn+1)
-                    _used_channels.append(cc+1)
-        for cc in set(_used_channels):
-            self.driver.get_channel(cc).output_state = 'on'
+            res, byteseq, repeat, infos, errors = context.compile_loop(seq)
 
-        self.driver.set_goto_pos(loop_points, 1)
+    
+            already_added = {}            
+            for ch_id in self.driver.defined_channels:
+                if ch_id in byteseq:
+                    for pos,waveform in enumerate(byteseq[ch_id]):
+                        addr = id(waveform)
+                        if addr not in already_added:
+                            seq_name_transfered = context.sequence_name  + '_Ch{}'.format(ch_id) +\
+                                                '_' + str(pos)
+                            self.driver.to_send(seq_name_transfered, waveform)
+                            already_added[addr] = seq_name_transfered
+                        else:
+                            seq_name_transfered =  already_added[addr]
+                        self.driver.get_channel(ch_id).set_sequence_pos(seq_name_transfered, current_pos + pos + 1)
+                        self.driver.set_repeat(current_pos + pos + 1, repeat[pos])
+                        self.driver.set_goto_pos(current_pos + pos + 1, current_pos + pos + 2)
+        
+            current_pos += len(byteseq[self.driver.defined_channels[0]])
+        
+        self.driver.set_goto_pos(current_pos, 1)
+            
+        for ch_id in self.driver.defined_channels:
+           if ch_id in byteseq:
+               ch = self.driver.get_channel(ch_id)                     
+               ch.output_state = 'ON'
+               
 
         if not res:
-            raise Exception('Failed to compile sequence :\n' +
-                            pformat(errors))
+            raise Exception('Failed to compile sequence')
 
         for k, v in infos.items():
             self.write_in_database(k, v)
