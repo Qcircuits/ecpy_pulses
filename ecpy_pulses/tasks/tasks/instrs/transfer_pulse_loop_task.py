@@ -107,6 +107,8 @@ class TransferPulseLoopTask(InstrumentTask):
         loop_stop = float(self.format_and_eval_string(self.loop_stop))
         loop_points = int(self.format_and_eval_string(self.loop_points))
         self.driver.run_mode = 'SEQUENCE'
+        self.driver.clear_all_sequences
+        self.driver.delete_all_waveforms
         self.driver.internal_trigger = self.internal_trigger
         if self.internal_trigger:
             self.driver.internal_trigger_period = int(float(self.trigger_period) * 1000)
