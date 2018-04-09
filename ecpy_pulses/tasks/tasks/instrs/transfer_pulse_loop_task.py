@@ -99,6 +99,9 @@ class TransferPulseLoopTask(InstrumentTask):
         """Compile the sequence.
 
         """
+        self.driver.run_mode = 'SEQUENCE'
+        self.driver.delete_all_waveforms
+        self.driver.clear_all_sequences
         seq = self.sequence
         context = seq.context
         context.run_after_transfer = False
@@ -106,24 +109,19 @@ class TransferPulseLoopTask(InstrumentTask):
         loop_start = float(self.format_and_eval_string(self.loop_start))
         loop_stop = float(self.format_and_eval_string(self.loop_stop))
         loop_points = int(self.format_and_eval_string(self.loop_points))
-        self.driver.run_mode = 'SEQUENCE'
-        self.driver.clear_all_sequences
-        self.driver.delete_all_waveforms
+
         self.driver.internal_trigger = self.internal_trigger
         if self.internal_trigger:
             self.driver.internal_trigger_period = int(float(self.trigger_period) * 1000)
 
         loop_values = np.linspace(loop_start, loop_stop, loop_points)
-        seq_name_0 = context.sequence_name
-        self.driver.delete_all_waveforms()
-        self.driver.clear_all_sequences()
 
         current_pos = 0        
         for nn in range(loop_points):
             self.sequence_vars[self.loop_name] = str(loop_values[nn])
             for k, v in self.sequence_vars.items():
                 seq.external_vars[k] = self.format_and_eval_string(v)
-            context.sequence_name = '{}_{}'.format(seq_name_0, nn+1)
+            context.sequence_name = '{}'.format(nn+1)
             res, byteseq, repeat, infos, errors = context.compile_loop(seq)
 
     
