@@ -17,7 +17,7 @@ from traceback import format_exc
 from pprint import pformat
 from collections import OrderedDict
 import numpy as np
-
+import time
 from atom.api import Value, Unicode, Float, Typed, Bool
 from ecpy.tasks.api import (InstrumentTask)
 from ecpy.utils.atom_util import ordered_dict_from_pref, ordered_dict_to_pref
@@ -102,6 +102,7 @@ class TransferPulseLoopTask(InstrumentTask):
         self.driver.run_mode = 'SEQUENCE'
         self.driver.delete_all_waveforms
         self.driver.clear_all_sequences
+        time.sleep(10)
         seq = self.sequence
         context = seq.context
         context.run_after_transfer = False

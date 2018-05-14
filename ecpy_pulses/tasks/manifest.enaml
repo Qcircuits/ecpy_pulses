@@ -42,3 +42,12 @@ enamldef PulsesTasksManifest(PluginManifest):
                 # Way to declare instrument dependencies without specifying
                 # any instrument.
                 instruments = [None]
+            path = 'ecpy_pulses.tasks.tasks.instrs'
+            Task:
+                task = 'transfer_awg_file_task:TransferAWGFileTask'
+                view = ('views.transfer_awg_file_task_view:'
+                        'TransferAWGFileView')
+                # Way to declare instrument dependencies without specifying
+                # any instrument.
+                instruments = [None]
+
